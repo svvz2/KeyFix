@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace KeyFix.App;
 
@@ -48,6 +49,19 @@ internal static class SingleInstanceWindowMessenger
                         return true;
                     }
 
+                    var titleLength = GetWindowTextLength(window);
+                    if (titleLength <= 0)
+                    {
+                        return true;
+                    }
+
+                    var title = new StringBuilder(titleLength + 1);
+                    GetWindowText(window, title, title.Capacity);
+                    if (!string.Equals(title.ToString(), "KeyFix", StringComparison.Ordinal))
+                    {
+                        return true;
+                    }
+
                     found = window;
                     return false;
                 }, nint.Zero);
@@ -73,6 +87,12 @@ internal static class SingleInstanceWindowMessenger
 
     [DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(nint windowHandle, out int processId);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int GetWindowText(nint windowHandle, StringBuilder text, int maximumCount);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int GetWindowTextLength(nint windowHandle);
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]

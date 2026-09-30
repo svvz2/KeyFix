@@ -19,9 +19,9 @@
     "url": "https://github.com/svvz2/KeyFix/discussions"
   },
   "update": {
-    "latestVersion": "1.4.0",
-    "message": "أضفنا قناة GitHub للتحديثات والتواصل وروابط التحميل الموثوقة.",
-    "downloadUrl": "https://github.com/svvz2/KeyFix/releases/download/v1.4.0/KeyFix-1.4.0-win-x64.zip",
-    "releaseNotesUrl": "https://github.com/svvz2/KeyFix/releases/tag/v1.4.0"
+    "latestVersion": "1.4.1",
+    "message": "صار التحويل اليدوي ينفذ مباشرة، وأصلحنا ظهور نوافذ WPF الصغيرة عند فتح نسخة ثانية.",
+    "downloadUrl": "https://github.com/svvz2/KeyFix/releases/download/v1.4.1/KeyFix-1.4.1-win-x64.zip",
+    "releaseNotesUrl": "https://github.com/svvz2/KeyFix/releases/tag/v1.4.1"
   }
 }

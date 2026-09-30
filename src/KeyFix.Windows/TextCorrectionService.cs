@@ -59,28 +59,32 @@ public sealed class TextCorrectionService(
                 return new CorrectionOutcome(CorrectionStatus.NoSelection, "حدد نصاً أولاً، أو ضع المؤشر بعد الكلمة");
             }
 
-            var result = converter.Convert(selected.Text, directionOverride ?? settings.PreferredDirection);
-            if (!result.Changed || result.ConvertedCharacters == 0)
-            {
-                keyboardInput.CollapseSelectionToEnd();
-                return new CorrectionOutcome(CorrectionStatus.NoChange, "النص لا يحتاج إلى تحويل");
-            }
+            var result = LayoutConversionPolicy.ConvertUserRequest(
+                converter,
+                selected.Text,
+                directionOverride ?? settings.PreferredDirection);
 
             keyboardInput.SendUnicodeText(result.ConvertedText);
-            _lastTransaction = new CorrectionTransaction(
-                selected.Text,
-                result.ConvertedText,
-                result.Direction,
-                DateTimeOffset.UtcNow,
-                window.Handle);
+            if (result.Changed)
+            {
+                _lastTransaction = new CorrectionTransaction(
+                    selected.Text,
+                    result.ConvertedText,
+                    result.Direction,
+                    DateTimeOffset.UtcNow,
+                    window.Handle);
+            }
 
-            if (settings.SwitchLayoutAfterCorrection)
+            if (result.Changed && settings.SwitchLayoutAfterCorrection)
             {
                 keyboardLayouts.SwitchForDirection(window, result.Direction);
             }
 
             await Task.Delay(40, cancellationToken);
-            return new CorrectionOutcome(CorrectionStatus.Success, "تم تصحيح النص", result.ConvertedText);
+            return new CorrectionOutcome(
+                CorrectionStatus.Success,
+                result.Changed ? "تم تحويل النص" : "تم تنفيذ أمر التحويل",
+                result.ConvertedText);
         }
         catch (OperationCanceledException)
         {
