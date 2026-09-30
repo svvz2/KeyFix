@@ -13,6 +13,9 @@ public sealed class TextCorrectionService(
 {
     private CorrectionTransaction? _lastTransaction;
 
+    public Task WaitForShortcutModifiersReleasedAsync(CancellationToken cancellationToken = default) =>
+        keyboardInput.WaitForShortcutModifiersReleasedAsync(cancellationToken);
+
     public async Task<CorrectionOutcome> FixSelectionAsync(
         AppSettings settings,
         bool selectPreviousWord = false,

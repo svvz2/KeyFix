@@ -445,7 +445,7 @@
                             </Grid>
                         </Border>
                         <TextBlock Text="KeyFix" FontSize="30" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                        <TextBlock Text="الإصدار 1.4.1" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,6,0,22"/>
+                        <TextBlock Text="الإصدار 1.4.2" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,6,0,22"/>
                         <Border Style="{StaticResource CardStyle}" Padding="30">
                             <StackPanel>
                                 <TextBlock Text="اكتب بسرعة. وصحّح بهدوء." FontSize="21" FontWeight="SemiBold" HorizontalAlignment="Center"/>

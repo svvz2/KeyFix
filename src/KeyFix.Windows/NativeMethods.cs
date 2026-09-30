@@ -13,8 +13,11 @@ internal static class NativeMethods
     internal const uint ModControl = 0x0002;
     internal const uint ModShift = 0x0004;
     internal const ushort VkControl = 0x11;
+    internal const ushort VkAlt = 0x12;
     internal const ushort VkBack = 0x08;
     internal const ushort VkShift = 0x10;
+    internal const ushort VkLeftWindows = 0x5B;
+    internal const ushort VkRightWindows = 0x5C;
     internal const ushort VkLeft = 0x25;
     internal const ushort VkRight = 0x27;
     internal const ushort VkC = 0x43;
@@ -56,6 +59,9 @@ internal static class NativeMethods
 
     [DllImport("user32.dll")]
     internal static extern uint GetClipboardSequenceNumber();
+
+    [DllImport("user32.dll")]
+    internal static extern short GetAsyncKeyState(int virtualKey);
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct INPUT

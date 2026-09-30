@@ -9,17 +9,22 @@ public sealed class ClipboardTextService(KeyboardInputService keyboardInput)
         var snapshot = ClipboardSnapshot.Capture();
         try
         {
-            TryClearClipboard();
-            var sequence = NativeMethods.GetClipboardSequenceNumber();
-            keyboardInput.SendCopy();
-
-            var changed = await WaitForClipboardChangeAsync(sequence, cancellationToken);
-            if (!changed || !Clipboard.ContainsText(TextDataFormat.UnicodeText))
+            for (var attempt = 0; attempt < 2; attempt++)
             {
-                return new ClipboardReadResult(null, snapshot);
+                TryClearClipboard();
+                var sequence = NativeMethods.GetClipboardSequenceNumber();
+                keyboardInput.SendCopy();
+
+                var changed = await WaitForClipboardChangeAsync(sequence, cancellationToken);
+                if (changed && Clipboard.ContainsText(TextDataFormat.UnicodeText))
+                {
+                    return new ClipboardReadResult(Clipboard.GetText(TextDataFormat.UnicodeText), snapshot);
+                }
+
+                await Task.Delay(60, cancellationToken);
             }
 
-            return new ClipboardReadResult(Clipboard.GetText(TextDataFormat.UnicodeText), snapshot);
+            return new ClipboardReadResult(null, snapshot);
         }
         catch
         {
@@ -46,7 +51,7 @@ public sealed class ClipboardTextService(KeyboardInputService keyboardInput)
 
     private static async Task<bool> WaitForClipboardChangeAsync(uint initialSequence, CancellationToken cancellationToken)
     {
-        for (var attempt = 0; attempt < 20; attempt++)
+        for (var attempt = 0; attempt < 32; attempt++)
         {
             await Task.Delay(25, cancellationToken);
             if (NativeMethods.GetClipboardSequenceNumber() != initialSequence)

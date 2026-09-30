@@ -5,6 +5,19 @@ namespace KeyFix.Windows;
 
 public sealed class KeyboardInputService
 {
+    public async Task WaitForShortcutModifiersReleasedAsync(CancellationToken cancellationToken = default)
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(3);
+        while (AreShortcutModifiersPressed() && DateTimeOffset.UtcNow < deadline)
+        {
+            await Task.Delay(20, cancellationToken);
+        }
+
+        // Give the active application one message-loop turn after the physical modifiers
+        // are released so the synthetic Ctrl+C is treated as a fresh chord.
+        await Task.Delay(35, cancellationToken);
+    }
+
     public void SendCopy() => SendChord(NativeMethods.VkControl, NativeMethods.VkC);
 
     public void SelectPreviousWord() =>
@@ -91,6 +104,16 @@ public sealed class KeyboardInputService
 
         Send(inputs);
     }
+
+    private static bool AreShortcutModifiersPressed() =>
+        IsPressed(NativeMethods.VkControl) ||
+        IsPressed(NativeMethods.VkAlt) ||
+        IsPressed(NativeMethods.VkShift) ||
+        IsPressed(NativeMethods.VkLeftWindows) ||
+        IsPressed(NativeMethods.VkRightWindows);
+
+    private static bool IsPressed(ushort virtualKey) =>
+        (NativeMethods.GetAsyncKeyState(virtualKey) & 0x8000) != 0;
 
     private static NativeMethods.INPUT KeyInput(ushort virtualKey, bool keyUp) => new()
     {

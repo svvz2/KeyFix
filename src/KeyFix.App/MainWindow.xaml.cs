@@ -376,9 +376,9 @@ public partial class MainWindow : Window
         _isProcessing = true;
         try
         {
-            // WM_HOTKEY arrives while Ctrl/Alt may still be logically pressed.
-            // Give Windows a moment to release them before sending Ctrl+C.
-            await Task.Delay(110);
+            // Wait for the physical shortcut keys to be released. A fixed delay is not
+            // reliable when the user holds Ctrl+Alt a little longer in any application.
+            await _correctionService.WaitForShortcutModifiersReleasedAsync();
             CorrectionOutcome outcome;
             if (id == UndoHotkeyId)
             {
