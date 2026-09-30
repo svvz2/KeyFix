@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/KeyFix.App/KeyFix.App.csproj" />
+    <Project Path="src/KeyFix.Core/KeyFix.Core.csproj" />
+    <Project Path="src/KeyFix.Windows/KeyFix.Windows.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/KeyFix.Tests/KeyFix.Tests.csproj" />
+  </Folder>
+</Solution>

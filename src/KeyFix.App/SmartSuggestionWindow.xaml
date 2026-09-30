@@ -1,0 +1,41 @@
+<Window x:Class="KeyFix.App.SmartSuggestionWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="350" Height="112" SizeToContent="Manual"
+        WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="True"
+        Background="Transparent" ShowInTaskbar="False" ShowActivated="False"
+        Topmost="True" FlowDirection="RightToLeft" Language="ar-IQ">
+    <Border Margin="9" Background="#FFFEFC" BorderBrush="#D8D5CD" BorderThickness="1"
+            CornerRadius="13" Padding="13">
+        <Border.Effect>
+            <DropShadowEffect Color="#000000" BlurRadius="22" ShadowDepth="6" Opacity="0.22"/>
+        </Border.Effect>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="36"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Width="32" Height="32" CornerRadius="9" Background="#F3DFD5" VerticalAlignment="Top">
+                <TextBlock Text="أ A" Foreground="#A95132" FontSize="11" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+
+            <StackPanel Grid.Column="1" Margin="10,0,12,0">
+                <TextBlock Text="يمكن لغة الكتابة مو صحيحة" Foreground="#20231F" FontSize="13" FontWeight="SemiBold"/>
+                <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                    <TextBlock Text="الاقتراح:" Foreground="#747970" FontSize="11" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="SuggestedTextBlock" Foreground="#A95132" FontSize="12" FontWeight="SemiBold"
+                               Margin="6,0,0,0" MaxWidth="135" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Text="المعالجة محلية" Foreground="#8B8E87" FontSize="9" Margin="0,4,0,0"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                <Button Content="تصحيح" Click="AcceptButton_Click" Style="{StaticResource PrimaryButton}" Padding="14,7" FontSize="11"/>
+                <Button Content="تجاهل" Click="DismissButton_Click" Style="{StaticResource SecondaryButton}" Padding="14,5" FontSize="10" Margin="0,5,0,0"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

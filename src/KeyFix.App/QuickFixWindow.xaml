@@ -1,0 +1,47 @@
+<Window x:Class="KeyFix.App.QuickFixWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="205" Height="64" SizeToContent="Manual"
+        WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="True"
+        Background="Transparent" ShowInTaskbar="False" ShowActivated="False"
+        Topmost="True" FlowDirection="RightToLeft">
+    <Border Margin="7" Background="#FFFEFC" BorderBrush="#D8D5CD" BorderThickness="1"
+            CornerRadius="11" Padding="4">
+        <Border.Effect>
+            <DropShadowEffect Color="#000000" BlurRadius="18" ShadowDepth="5" Opacity="0.22"/>
+        </Border.Effect>
+        <Button Click="FixLanguageButton_Click" Background="Transparent" BorderThickness="0"
+                Cursor="Hand" ToolTip="تحويل النص المحدد إلى تخطيط الكيبورد المقابل">
+            <Button.Template>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="ActionBackground" Background="Transparent" CornerRadius="7" Padding="9,5">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="34"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Width="29" Height="29" CornerRadius="8" Background="#C56842">
+                                <TextBlock Text="⇄" Foreground="White" FontSize="16" FontWeight="SemiBold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="9,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="تصحيح اللغة" Foreground="#20231F" FontFamily="Segoe UI Variable Text, Segoe UI"
+                                           FontSize="13" FontWeight="SemiBold"/>
+                                <TextBlock Text="عربي  /  English" Foreground="#747970" FontFamily="Segoe UI Variable Text, Segoe UI"
+                                           FontSize="9" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ActionBackground" Property="Background" Value="#F3EFE8"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="ActionBackground" Property="Opacity" Value="0.72"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+    </Border>
+</Window>

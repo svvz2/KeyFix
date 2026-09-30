@@ -1,0 +1,1107 @@
+إي، هاي الفكرة قابلة تتحول إلى **منتج Desktop حقيقي** مو مجرد سكربت. وأشوف الأفضل نبنيها من البداية كـWindows utility احترافية تشبه Grammarly/PowerToys من ناحية إنها تظل بالـtray وتشتغل على مستوى النظام.
+
+## 1. شنو المنتج بالضبط؟
+
+خل نسميه مؤقتًا **KeyFix**.
+
+الفكرة الأساسية:
+
+> المستخدم يكتب بأي برنامج، وإذا كتب عربي وهو ناسي الكيبورد English، أو العكس، البرنامج يكتشفها ويحوّل النص إلى الحروف المقابلة على نفس أزرار الكيبورد.
+
+مثلًا:
+
+```text
+hgsghl ugd;l
+```
+
+المستخدم كان يقصد:
+
+```text
+السلام عليكم
+```
+
+لأن:
+
+```text
+h → ا
+g → ل
+s → س
+g → ل
+h → ا
+l → م
+```
+
+المهم هنا أن البرنامج **مو يترجم النص**، وإنما يعيد تفسير الأزرار التي ضغطها المستخدم باستخدام Keyboard Layout ثاني.
+
+وهذا فرق جوهري.
+
+---
+
+# 2. طرق الاستخدام
+
+أريد من البداية نخلي البرنامج عنده 3 مستويات.
+
+| Mode | الوظيفة |
+|---|---|
+| Manual | تحدد النص وتضغط Hotkey فيتحول |
+| Smart | يلاحظ أنك كتبت شيء مشبوه ويعرض اقتراح |
+| Automatic | يصحح الكلمة تلقائيًا عندما يكون واثق جدًا |
+
+مثلاً أنت داخل Chrome أو Telegram أو Word وتكتب:
+
+```text
+lvpfh
+```
+
+إذا المقصود:
+
+```text
+مرحبا
+```
+
+يقدر يظهر Popup صغير:
+
+```text
+lvpfh  →  مرحبا
+
+[Fix] [Ignore]
+```
+
+أو إذا Auto Mode شغال:
+
+```text
+lvpfh
+```
+
+بمجرد Space تتحول إلى:
+
+```text
+مرحبا 
+```
+
+والأقوى من هذا: بعد التصحيح يقدر البرنامج **يغير Keyboard Layout نفسه للعربي** حتى تكمل كتابة عربي وما تتكرر المشكلة.
+
+Windows نفسه يوفر رسالة `WM_INPUTLANGCHANGEREQUEST` لتغيير لغة الإدخال للنافذة ذات التركيز. :chatgpt-content-reference{index="0"}
+
+---
+
+# 3. C# لو C++؟
+
+للنسخة الأولى أنصح بقوة:
+
+**C# + .NET 10 + WPF**
+
+.NET 10 إصدار LTS ومدعوم لمدة ثلاث سنوات، وWPF مناسب جدًا لبرنامج Windows utility من هذا النوع. :chatgpt-content-reference{index="1"}
+
+C++ أخليه لمرحلة لاحقة إذا احتجنا integration أعمق.
+
+السبب أن C# يعطينا بسرعة:
+
+```text
+Windows UI
+System Tray
+Settings
+SQLite
+Hotkeys
+Auto Update
+JSON
+Logging
+Windows API via P/Invoke
+Installer
+Unit Testing
+```
+
+بينما الأشياء المنخفضة المستوى نستدعيها مباشرة من:
+
+```text
+user32.dll
+kernel32.dll
+UIAutomation
+```
+
+---
+
+# 4. المعمارية اللي أقترحها
+
+أريد المشروع ما يكون ملف واحد يراقب الكيبورد، وإنما Engine كامل.
+
+```text
+KeyFix
+│
+├── KeyFix.App
+│   ├── Main Window
+│   ├── Tray Icon
+│   ├── Settings
+│   └── Popup Suggestions
+│
+├── KeyFix.Core
+│   ├── LayoutConverter
+│   ├── LanguageDetector
+│   ├── CorrectionEngine
+│   ├── TextBuffer
+│   └── RulesEngine
+│
+├── KeyFix.Windows
+│   ├── KeyboardHook
+│   ├── InputInjector
+│   ├── ForegroundWindow
+│   ├── KeyboardLayoutManager
+│   ├── ClipboardService
+│   └── UIAutomationService
+│
+├── KeyFix.Intelligence
+│   ├── ArabicScorer
+│   ├── EnglishScorer
+│   ├── NGramModel
+│   └── ConfidenceEngine
+│
+├── KeyFix.Storage
+│   ├── Settings
+│   ├── AppRules
+│   └── LocalDictionary
+│
+└── KeyFix.Tests
+```
+
+وهذا يفيدنا جدًا لأن لاحقًا إذا أردنا Mac أو Linux، الـCore يبقى نفسه ونبدل Windows integration فقط.
+
+---
+
+# 5. أهم جزء: Layout Conversion Engine
+
+ما أريد نسوي mapping ثابت مثل:
+
+```csharp
+'h' => 'ا'
+'g' => 'ل'
+```
+
+فقط.
+
+هذا يشتغل، لكن مو احترافي لأن المستخدم قد يستخدم:
+
+```text
+Arabic 101
+Arabic 102
+US English
+UK English
+French
+German
+```
+
+الأحسن نخلي Windows نفسه يخبرنا شنو الحرف الموجود على نفس الزر بكل Layout.
+
+Windows يوفر `GetKeyboardLayout` لمعرفة Input Locale الحالي. :chatgpt-content-reference{index="2"}
+
+ويتوفر `ToUnicodeEx` لتحويل Virtual Key إلى Unicode باستخدام Keyboard Layout نحدده إحنا. :chatgpt-content-reference{index="3"}
+
+يعني المحرك يصير تقريبًا:
+
+```text
+Character
+    ↓
+ما هو الزر الذي أنتجه بالـEnglish layout؟
+    ↓
+نفس الزر شنو ينتج بالـArabic layout؟
+    ↓
+Arabic Character
+```
+
+وبهذا KeyFix يصير Layout-independent تقريبًا.
+
+---
+
+# 6. Manual Correction
+
+هذه أول ميزة لازم نبنيها لأنها الأسهل والأكثر موثوقية.
+
+المستخدم يكتب:
+
+```text
+hgsghl ugd;l
+```
+
+يحددها بالماوس.
+
+يضغط مثلاً:
+
+```text
+Ctrl + Alt + K
+```
+
+البرنامج يحصل على النص المحدد، يحوله، ويستبدله بـ:
+
+```text
+السلام عليكم
+```
+
+Windows يوفر `RegisterHotKey` لعمل Hotkey على مستوى النظام. :chatgpt-content-reference{index="4"}
+
+بالنسبة لاستخراج النص المحدد نستخدم طريقتين:
+
+```text
+UI Automation
+      ↓
+إذا التطبيق يدعمها
+      ↓
+Get Selected Text
+
+إذا ما يدعمها:
+      ↓
+Ctrl+C
+      ↓
+Read Clipboard
+      ↓
+Restore original clipboard
+```
+
+وبالاستبدال أفضل نحاول استخدام Unicode keyboard injection بدل الاعتماد دائمًا على Clipboard.
+
+---
+
+# 7. تصحيح آخر كلمة بدون تحديدها
+
+هاي ميزة مهمة جدًا.
+
+مثلاً كتبت:
+
+```text
+انا اليوم رحت hgl]vs
+```
+
+وتنتبه بعد الكتابة.
+
+بدل ما تحدد:
+
+```text
+Ctrl + Alt + K
+```
+
+البرنامج يعرف آخر كلمة كتبها:
+
+```text
+hgl]vs
+```
+
+ويحولها مباشرة.
+
+حتى إذا ما كانت محددة.
+
+نخلي داخل البرنامج:
+
+```text
+RecentTextBuffer
+```
+
+لكن مهم جدًا:
+
+**ما نخزن كل ما يكتبه المستخدم.**
+
+نحتفظ فقط بآخر كلمة أو آخر عدد صغير من الأحرف داخل RAM.
+
+مثلاً:
+
+```text
+Maximum = 128 characters
+```
+
+ومع تغيير الحقل أو البرنامج ننظفه.
+
+---
+
+# 8. Global Keyboard Monitoring
+
+للـAuto Mode نحتاج نعرف المفاتيح التي تنضغط على مستوى Windows.
+
+يمكن استخدام:
+
+```text
+SetWindowsHookEx
+WH_KEYBOARD_LL
+```
+
+Microsoft توضح أن `LowLevelKeyboardProc` يتلقى Keyboard events قبل وصولها إلى target thread، لكن تنبه أيضًا أن الـcallback لازم يكون سريع جدًا؛ وإذا تأخر يمكن إزالة الـhook، ولذلك التصميم الصحيح هو تسليم الحدث إلى worker thread وعدم إجراء processing ثقيل داخله. :chatgpt-content-reference{index="5"}
+
+يعني ما نسوي:
+
+```text
+Keyboard Hook
+   ↓
+AI
+   ↓
+Dictionary
+   ↓
+Database
+```
+
+داخل نفس callback.
+
+بل:
+
+```text
+Keyboard Hook
+      │
+      ↓
+Concurrent Queue
+      │
+      ↓
+Worker Thread
+      │
+      ├─ Text Buffer
+      ├─ Detection
+      └─ Correction
+```
+
+الـhook يرجع فورًا.
+
+---
+
+# 9. شلون يعرف أن المستخدم أخطأ أصلًا؟
+
+هذا أصعب وأجمل جزء بالمشروع.
+
+إذا كتب:
+
+```text
+hello
+```
+
+ما نريد نحوله إلى:
+
+```text
+اثممخ
+```
+
+😄
+
+لذلك عند كل كلمة نحسب احتمالين:
+
+```text
+Original:
+hello
+
+Converted:
+اثممخ
+```
+
+ثم نسأل:
+
+```text
+EnglishScore("hello") = 0.99
+ArabicScore("اثممخ") = 0.01
+```
+
+القرار:
+
+```text
+DO NOTHING
+```
+
+لكن:
+
+```text
+Original:
+lvpfh
+
+Converted:
+مرحبا
+```
+
+يصير:
+
+```text
+EnglishScore("lvpfh") = 0.02
+ArabicScore("مرحبا") = 0.98
+```
+
+فنعرف أن المستخدم غالبًا ناسي الكيبورد English.
+
+---
+
+# 10. الـSmart Detection Engine
+
+ما أبدأ بـAI ثقيل.
+
+نسوي Engine سريع جدًا يعتمد على عدة Scores:
+
+```text
+Dictionary Score
++
+Character Frequency
++
+Bigram Score
++
+Trigram Score
++
+Word Pattern
++
+Context
++
+Current Keyboard Layout
+=
+Confidence
+```
+
+مثلاً:
+
+```text
+Confidence = 97%
+```
+
+إذا:
+
+```text
+> 95%
+```
+
+Auto Correct.
+
+إذا:
+
+```text
+75–95%
+```
+
+Suggestion.
+
+إذا:
+
+```text
+< 75%
+```
+
+لا يسوي شيء.
+
+والنسب كلها المستخدم يقدر يغيرها.
+
+---
+
+# 11. اللهجة العراقية مهمة جدًا
+
+إذا اعتمدنا قاموس عربي رسمي فقط راح يعتبر كلمات مثل:
+
+```text
+شلونك
+وينك
+هسه
+اكو
+مابيها
+اريدك
+دزلي
+```
+
+كلمات غريبة.
+
+لذلك أريد Detection Engine ما يعتمد فقط على Dictionary.
+
+نضيف:
+
+```text
+Arabic character n-gram model
+```
+
+يعني يتعلم شنو تسلسل الحروف الطبيعي بالعربي.
+
+مثلاً:
+
+```text
+شلو
+لون
+ونك
+```
+
+أقرب للعربي من:
+
+```text
+gdk
+xqw
+```
+
+وبذلك يفهم حتى الكلمات العامية.
+
+---
+
+# 12. بعدين نضيف Local AI
+
+بالنسخة المتقدمة نقدر ندرب Model صغير جدًا:
+
+```text
+Input:
+Current word
+Previous words
+Active keyboard layout
+
+Output:
+Correct
+Wrong layout
+Confidence
+Target language
+```
+
+ونصدره:
+
+```text
+ONNX
+```
+
+ويشتغل بالكامل على الجهاز.
+
+لا Internet.
+لا API.
+لا إرسال كلام المستخدم لسيرفر.
+
+وهذا جدًا مهم لنجاح المنتج.
+
+---
+
+# 13. التصحيح الفعلي
+
+Windows يوفر `SendInput` لإدخال Keyboard events برمجيًا. :chatgpt-content-reference{index="6"}
+
+مثلاً إذا اكتشفنا:
+
+```text
+lvpfh
+```
+
+نرسل:
+
+```text
+Backspace × 5
+```
+
+ثم Unicode:
+
+```text
+مرحبا
+```
+
+لكن نحتاج Flag داخلي:
+
+```text
+IsInjecting = true
+```
+
+حتى الـKeyboard Hook ما يشوف الكتابة اللي إحنا أرسلناها ويعتقد أنها كتابة المستخدم ويعيد تحليلها.
+
+---
+
+# 14. Undo لازم يكون أساسي
+
+إذا البرنامج حول كلمة خطأ:
+
+```text
+Ctrl + Alt + Z
+```
+
+ترجع فورًا.
+
+مثلاً:
+
+```text
+Original = lvpfh
+Corrected = مرحبا
+```
+
+نخزن آخر عملية فقط:
+
+```text
+CorrectionTransaction
+{
+    OriginalText
+    CorrectedText
+    Timestamp
+}
+```
+
+ثم Undo.
+
+هذا يزيد ثقة المستخدم بالـAuto Mode كثير.
+
+---
+
+# 15. تغيير اللغة تلقائيًا
+
+هاي بالنسبة إلي Feature قاتلة.
+
+إذا أنت حاط English وكتبت:
+
+```text
+lvpfh
+```
+
+فاكتشف أنها:
+
+```text
+مرحبا
+```
+
+نسوي شيئين:
+
+```text
+1. Correct:
+lvpfh → مرحبا
+
+2. Switch:
+EN → AR
+```
+
+فتكمل مباشرة:
+
+```text
+مرحبا شلونك اليوم
+```
+
+بدل ما يظل يصلح كل كلمة.
+
+Windows يدعم معرفة وتغيير Input Locale للنافذة. :chatgpt-content-reference{index="7"}
+
+---
+
+# 16. الخصوصية هنا لازم تكون جزء من التصميم
+
+لأن أي برنامج global keyboard hook ممكن المستخدم يخاف منه ويعتبره Keylogger.
+
+فنصمم البرنامج من البداية بحيث:
+
+```text
+No cloud processing
+No keystroke database
+No raw keyboard history
+No analytics containing typed text
+```
+
+والـbuffer:
+
+```text
+RAM only
+Short lived
+Automatically cleared
+```
+
+وفوق هذا نفحص focused control.
+
+Windows UI Automation يوفر خاصية `IsPasswordProperty` لمعرفة أن العنصر Password field. :chatgpt-content-reference{index="8"}
+
+فإذا:
+
+```text
+IsPassword = true
+```
+
+نوقف processing بالكامل.
+
+وكذلك نخلي blacklist تلقائي لبعض الحالات الحساسة، بالإضافة إلى:
+
+```text
+Pause KeyFix
+Pause for 5 minutes
+Pause in this app
+Never run in this app
+```
+
+---
+
+# 17. التطبيقات المستثناة
+
+أريد Settings اسمها:
+
+**App Rules**
+
+مثلاً:
+
+| Application | Mode |
+|---|---|
+| Telegram | Auto |
+| Chrome | Smart |
+| Word | Auto |
+| Visual Studio | Manual |
+| VS Code | Manual |
+| KeePass | Disabled |
+| Banking software | Disabled |
+
+لأن الـprogrammers مثلًا مرات يريدون يكتبون:
+
+```cpp
+int main()
+```
+
+ما نريد البرنامج يتدخل بالكود.
+
+---
+
+# 18. URLs والإيميلات والكود
+
+Rules Engine لازم يتعرف على:
+
+```text
+https://
+www.
+.com
+@gmail.com
+C:\
+int
+void
+#include
+SELECT *
+192.168.1.1
+```
+
+ولا يعمل Auto Correction عليها.
+
+نقدر نخلي Manual correction شغال، لكن Smart Auto يتجاهلها.
+
+---
+
+# 19. الواجهة
+
+أنا أتخيل البرنامج **Tray-first**.
+
+بالـTaskbar:
+
+```text
+K
+```
+
+أو Icon بسيط.
+
+عند الضغط:
+
+```text
+KeyFix
+
+Protection: ON
+
+Current layout:
+English US → Arabic 101
+
+Mode:
+○ Manual
+● Smart
+○ Automatic
+
+Corrections today: 17
+
+[Pause]
+[Settings]
+```
+
+وتحتها Settings كاملة.
+
+---
+
+# 20. الـFloating Popup
+
+إذا Confidence مو كافي للتصحيح:
+
+```text
+┌────────────────────────────┐
+│ Did you mean: مرحبا ؟      │
+│                            │
+│ lvpfh → مرحبا              │
+│                            │
+│ Enter: Fix     Esc: Ignore │
+└────────────────────────────┘
+```
+
+ويختفي خلال ثوانٍ.
+
+وبمرور الوقت البرنامج يتعلم:
+
+```text
+User accepted 20 similar fixes
+```
+
+فيزيد الثقة.
+
+---
+
+# 21. Dashboard
+
+أريد الصفحات الرئيسية تكون:
+
+```text
+Home
+Languages
+Smart Correction
+Hotkeys
+Applications
+Privacy
+Personal Dictionary
+Advanced
+About
+```
+
+وHotkeys كلها قابلة للتعديل.
+
+مثلاً:
+
+| الوظيفة | الاختصار |
+|---|---|
+| Fix selected text | Ctrl + Alt + K |
+| Fix last word | Ctrl + Alt + Space |
+| Fix last sentence | Ctrl + Shift + K |
+| Undo correction | Ctrl + Alt + Z |
+| Pause KeyFix | Ctrl + Alt + P |
+
+---
+
+# 22. النظام ما يكون محصور عربي/إنكليزي
+
+وهنا عندنا فرصة قوية.
+
+إذا بنينا Layout Engine صح من البداية، ممكن بعدين يصير:
+
+```text
+English ↔ Arabic
+English ↔ French
+English ↔ Russian
+English ↔ Persian
+English ↔ Hebrew
+...
+```
+
+لأن `ToUnicodeEx` يسمح باستخدام Keyboard Layout محدد عند تحويل Virtual Keys إلى Unicode. :chatgpt-content-reference{index="9"}
+
+يعني المنتج يصير عالمي مو فقط عربي.
+
+---
+
+# 23. مشكلة مهمة: البرامج اللي تشتغل Administrator
+
+`SendInput` عنده قيود UIPI؛ برنامج بمستوى صلاحيات عادي ما يقدر دائمًا يحقن input إلى برنامج يعمل بمستوى integrity أعلى. :chatgpt-content-reference{index="10"}
+
+يعني إذا:
+
+```text
+KeyFix = normal
+
+Application = Run as Administrator
+```
+
+ممكن التصحيح ما يشتغل.
+
+ما أريد نشغل KeyFix دائمًا Administrator لأن هذا سيئ أمنيًا.
+
+بالنسخة الأولى نظهر:
+
+```text
+KeyFix cannot modify elevated applications.
+```
+
+وبعدين ندرس signed UIAccess helper إذا احتجناه.
+
+---
+
+# 24. المرحلة المتقدمة جدًا: Windows TSF
+
+إذا المنتج نجح، نقدر نخليه أكثر اندماجًا مع Windows باستخدام:
+
+**Text Services Framework — TSF**
+
+Microsoft تصف TSF بأنه النظام الخاص بخدمات الإدخال والنصوص متعددة اللغات، وخدمة TSF تستطيع الحصول على النص وكتابته عبر TSF manager. :chatgpt-content-reference{index="11"}
+
+وقتها Architecture يصير:
+
+```text
+C# Desktop App
+        │
+        ├── UI
+        ├── AI Engine
+        └── Settings
+
+C++ TSF Service
+        │
+        └── Deep Windows Text Integration
+```
+
+لكن **ما نبدأ من هنا** لأن راح يزيد التعقيد جدًا بدون حاجة للـMVP.
+
+---
+
+# 25. مراحل التطوير
+
+أنا أقسم المشروع إلى سبع مراحل:
+
+1. **Core Prototype:** اكتشاف Arabic/English layouts، تحويل نص EN→AR وAR→EN، وتجارب مثل `hgsghl → السلام`.
+
+2. **Manual Desktop MVP:** System Tray، Hotkey عالمي، تحديد نص وتصحيحه، Fix last word، Undo.
+
+3. **Global Engine:** Keyboard hook، recent word buffer، foreground application detection، وتغيير اللغة تلقائيًا.
+
+4. **Smart Detection:** Arabic/English scoring، dictionaries، n-grams، confidence system، suggestion popup.
+
+5. **Privacy & Compatibility:** Password detection، excluded apps، URLs/code detection، clipboard preservation، loop protection، Unicode edge cases.
+
+6. **Commercial UI:** WPF polished UI، startup with Windows، installer، auto-update، crash reporting بدون إرسال النصوص، code signing.
+
+7. **Advanced Intelligence:** Local ONNX model، Iraqi/Arabic dialect handling، user learning، ودعم لغات إضافية.
+
+---
+
+# 26. الـMVP اللي أشوفه لازم نسويه أولًا
+
+النسخة الأولى **ما تحتاج AI أصلًا**.
+
+إذا وصلنا إلى برنامج يعمل هكذا:
+
+```text
+1. يعمل مع Windows.
+2. يبقى بالTray.
+3. يعرف EN/AR Layouts.
+4. المستخدم يحدد hgsghl.
+5. يضغط Hotkey.
+6. تصبح السلام.
+7. يقدر يصلح آخر كلمة بدون تحديد.
+8. يقدر Undo.
+9. يغير EN → AR تلقائيًا بعد التصحيح.
+```
+
+فإحنا عندنا منتج قابل للاستخدام فعليًا.
+
+بعدها نضيف Smart Mode.
+
+---
+
+# 27. الشي المهم بالـAuto Correction
+
+أنا **ما أريد نبدأ Auto Mode بأن أي كلمة غريبة تنقلب مباشرة**.
+
+الأفضل أول نسخة Smart تكون:
+
+```text
+Confidence < 80%
+→ Ignore
+
+80–95%
+→ Suggest
+
+> 95%
+→ Auto Correct
+```
+
+وبعدين المستخدم يقدر يختار:
+
+```text
+Conservative
+Balanced
+Aggressive
+```
+
+هذا يمنع البرنامج من أن يصير مزعج.
+
+---
+
+# 28. رؤيتي للنسخة النهائية
+
+أتخيل المستخدم يثبت البرنامج، وبعدها تقريبًا ينسى أنه موجود.
+
+يكتب في:
+
+```text
+Chrome
+WhatsApp Desktop
+Telegram
+Discord
+Word
+Excel
+Notepad
+Facebook
+Instagram
+Email
+```
+
+وينسى اللغة ويكتب:
+
+```text
+hgsghl ugd;l
+```
+
+البرنامج خلال لحظة يحولها:
+
+```text
+السلام عليكم
+```
+
+ويبدل الكيبورد:
+
+```text
+EN → AR
+```
+
+ويكمل المستخدم طبيعي.
+
+ولو مو واثق:
+
+```text
+Did you mean "السلام عليكم"?
+```
+
+ولو أخطأ:
+
+```text
+Ctrl + Alt + Z
+```
+
+ويرجع كلشي.
+
+---
+
+## قراري التقني للمشروع
+
+أنا أقترح نعتمده رسميًا بهذه الـstack:
+
+```text
+Language:
+C# 14
+
+Framework:
+.NET 10 LTS
+
+Desktop UI:
+WPF
+
+Architecture:
+MVVM + Services
+
+Windows Integration:
+Win32 API / PInvoke
+
+Keyboard:
+WH_KEYBOARD_LL
+
+Text Injection:
+SendInput / Unicode
+
+Selected Text:
+UI Automation + Clipboard fallback
+
+Layout Conversion:
+GetKeyboardLayout
+VkKeyScanEx
+ToUnicodeEx
+
+Storage:
+JSON بالبداية
+SQLite عند الحاجة
+
+Smart Detection:
+Local C# engine
+
+Advanced AI:
+ONNX Runtime
+
+Target:
+Windows 10/11 x64
+```
+
+وأشوف **أول خطوة عملية هسه** مو نسوي الواجهة. نبدأ بمحرك صغير جدًا نسميه `KeyFix.Core` ونسوي له Test:
+
+```text
+hgsghl      → السلام
+ugd;l       → عليكم
+lvpfh       → مرحبا
+السلام      → hgsghl
+```
+
+لكن بدل Mapping مكتوب يدويًا، نخليه يقرأ **الـArabic والـEnglish keyboard layouts الموجودة فعلًا على جهاز Windows ويحوّل بينهما ديناميكيًا**. إذا نجحت هاي النواة، باقي البرنامج كله يتبني فوقها بسهولة.

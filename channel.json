@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "project": {
+    "repositoryUrl": "https://github.com/svvz2/KeyFix",
+    "issuesUrl": "https://github.com/svvz2/KeyFix/issues",
+    "discussionsUrl": "https://github.com/svvz2/KeyFix/discussions"
+  },
+  "social": {
+    "instagramHandle": "@22r2z",
+    "instagramUrl": "https://www.instagram.com/22r2z/",
+    "telegramHandle": "@Civil_Sajad",
+    "telegramUrl": "https://t.me/Civil_Sajad"
+  },
+  "announcement": {
+    "enabled": true,
+    "title": "أهلاً بك في مجتمع KeyFix",
+    "message": "تابع أخبار البرنامج، اقترح ميزة، أو بلّغ عن مشكلة من صفحة المشروع الرسمية.",
+    "buttonLabel": "مجتمع KeyFix",
+    "url": "https://github.com/svvz2/KeyFix/discussions"
+  },
+  "update": {
+    "latestVersion": "1.4.0",
+    "message": "أضفنا قناة GitHub للتحديثات والتواصل وروابط التحميل الموثوقة.",
+    "downloadUrl": "https://github.com/svvz2/KeyFix/releases/download/v1.4.0/KeyFix-1.4.0-win-x64.zip",
+    "releaseNotesUrl": "https://github.com/svvz2/KeyFix/releases/tag/v1.4.0"
+  }
+}

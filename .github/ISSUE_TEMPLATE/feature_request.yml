@@ -1,0 +1,19 @@
+name: اقتراح ميزة
+description: اقترح تحسيناً أو ميزة جديدة لـ KeyFix
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: الفكرة
+      description: ما المشكلة التي تحلها هذه الميزة؟
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: طريقة العمل المقترحة
+      description: وضّح كيف تتوقع أن تعمل داخل البرنامج.
+    validations:
+      required: true

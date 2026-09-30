@@ -1,0 +1,39 @@
+name: بلاغ عن مشكلة
+description: ساعدنا على تشخيص مشكلة في KeyFix
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: شكراً لمساعدتك. لا ترفق كلمات مرور أو نصوصاً خاصة.
+  - type: input
+    id: version
+    attributes:
+      label: إصدار KeyFix
+      placeholder: مثال 1.4.0
+    validations:
+      required: true
+  - type: dropdown
+    id: windows
+    attributes:
+      label: إصدار Windows
+      options:
+        - Windows 11
+        - Windows 10
+        - إصدار آخر
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: وصف المشكلة
+      description: اشرح ما حدث وما الذي كنت تتوقعه.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: خطوات إعادة المشكلة
+      placeholder: اكتب الخطوات بالترتيب
+    validations:
+      required: true
