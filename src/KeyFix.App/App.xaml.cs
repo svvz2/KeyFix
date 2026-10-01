@@ -9,13 +9,14 @@ namespace KeyFix.App;
 public partial class App : System.Windows.Application
 {
     private Mutex? _singleInstanceMutex;
+    private MainWindow? _keyFixWindow;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
         DispatcherUnhandledException += OnDispatcherUnhandledException;
-        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
-            DiagnosticLog.Write($"Fatal error: {args.ExceptionObject.GetType().Name}.");
+        AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+        AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
         DiagnosticLog.Write("Startup began.");
 
         _singleInstanceMutex = new Mutex(true, "Local\\KeyFix.Desktop.SingleInstance", out var createdNew);
@@ -58,6 +59,7 @@ public partial class App : System.Windows.Application
             new GlobalHotkeyService(),
             new GlobalMouseHookService(),
             new GlobalKeyboardHookService());
+        _keyFixWindow = window;
         DiagnosticLog.Write("Main window constructed.");
         MainWindow = window;
         window.Show();
@@ -81,6 +83,8 @@ public partial class App : System.Windows.Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        DisposeApplicationResources();
+
         if (_singleInstanceMutex is not null)
         {
             try
@@ -96,5 +100,31 @@ public partial class App : System.Windows.Application
         }
 
         base.OnExit(e);
+    }
+
+    protected override void OnSessionEnding(SessionEndingCancelEventArgs e)
+    {
+        DisposeApplicationResources();
+        base.OnSessionEnding(e);
+    }
+
+    private void OnUnhandledException(object sender, UnhandledExceptionEventArgs args)
+    {
+        DiagnosticLog.Write($"Fatal error: {args.ExceptionObject.GetType().Name}.");
+        DisposeApplicationResources();
+    }
+
+    private void OnProcessExit(object? sender, EventArgs e) => DisposeApplicationResources();
+
+    private void DisposeApplicationResources()
+    {
+        try
+        {
+            _keyFixWindow?.DisposeApplicationResources();
+        }
+        catch (Exception exception)
+        {
+            DiagnosticLog.Write($"Shutdown cleanup failed: {exception.GetType().Name}.");
+        }
     }
 }

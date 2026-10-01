@@ -31,8 +31,11 @@ public partial class MainWindow : Window
     private readonly QuickFixWindow _quickFixWindow;
     private readonly SmartSuggestionWindow _smartSuggestionWindow;
     private readonly Forms.NotifyIcon _trayIcon;
+    private readonly Forms.ContextMenuStrip _trayMenu;
+    private readonly System.Drawing.Icon _trayIconImage;
     private readonly Forms.ToolStripMenuItem _pauseMenuItem;
     private bool _allowExit;
+    private int _resourcesDisposed;
     private bool _isProcessing;
     private bool _closeTipShown;
     private bool _inputServicesReady;
@@ -78,7 +81,7 @@ public partial class MainWindow : Window
         _keyboardHookService.KeyObserved += OnGlobalKeyObserved;
         _viewModel.PropertyChanged += OnViewModelPropertyChanged;
 
-        var menu = new Forms.ContextMenuStrip();
+        _trayMenu = new Forms.ContextMenuStrip();
         var openItem = new Forms.ToolStripMenuItem("فتح KeyFix", null, (_, _) => Dispatcher.Invoke(ShowWindow));
         _pauseMenuItem = new Forms.ToolStripMenuItem("إيقاف مؤقت", null, (_, _) => Dispatcher.Invoke(ToggleEnabled));
         var contactItem = new Forms.ToolStripMenuItem("تواصل ويانا");
@@ -87,21 +90,22 @@ public partial class MainWindow : Window
         contactItem.DropDownItems.Add(new Forms.ToolStripMenuItem("GitHub  الدعم والملاحظات", null, (_, _) => Dispatcher.Invoke(() => OpenExternalLink(_issuesUri))));
         var checkUpdatesItem = new Forms.ToolStripMenuItem("فحص التحديثات", null, (_, _) => Dispatcher.Invoke(() => _ = RefreshGitHubChannelAsync(showResult: true)));
         var exitItem = new Forms.ToolStripMenuItem("خروج", null, (_, _) => Dispatcher.Invoke(ExitApplication));
-        menu.Items.Add(openItem);
-        menu.Items.Add(_pauseMenuItem);
-        menu.Items.Add(new Forms.ToolStripSeparator());
-        menu.Items.Add(contactItem);
-        menu.Items.Add(checkUpdatesItem);
-        menu.Items.Add(new Forms.ToolStripSeparator());
-        menu.Items.Add(exitItem);
+        _trayMenu.Items.Add(openItem);
+        _trayMenu.Items.Add(_pauseMenuItem);
+        _trayMenu.Items.Add(new Forms.ToolStripSeparator());
+        _trayMenu.Items.Add(contactItem);
+        _trayMenu.Items.Add(checkUpdatesItem);
+        _trayMenu.Items.Add(new Forms.ToolStripSeparator());
+        _trayMenu.Items.Add(exitItem);
         DiagnosticLog.Write("Tray menu created.");
 
+        _trayIconImage = TrayIconFactory.Create();
         _trayIcon = new Forms.NotifyIcon
         {
             Text = "KeyFix — مصحح تخطيط الكيبورد",
-            Icon = TrayIconFactory.Create(),
+            Icon = _trayIconImage,
             Visible = true,
-            ContextMenuStrip = menu
+            ContextMenuStrip = _trayMenu
         };
         DiagnosticLog.Write("Tray icon created.");
         _trayIcon.DoubleClick += (_, _) => Dispatcher.Invoke(ShowWindow);
@@ -727,16 +731,50 @@ public partial class MainWindow : Window
 
     private void OnClosed(object? sender, EventArgs e)
     {
-        _hotkeyService.Dispose();
-        _mouseHookService.Dispose();
-        _keyboardHookService.Dispose();
-        _githubChannelClient.Dispose();
-        _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
-        _quickFixWindow.ClosePermanently();
-        _smartSuggestionWindow.ClosePermanently();
-        _trayIcon.Visible = false;
-        _trayIcon.Dispose();
-        _viewModel.Save();
+        DisposeApplicationResources();
+    }
+
+    internal void DisposeApplicationResources()
+    {
+        if (Interlocked.Exchange(ref _resourcesDisposed, 1) != 0)
+        {
+            return;
+        }
+
+        try
+        {
+            // Remove the shell icon first so it cannot be left behind if later cleanup fails.
+            _trayIcon.Visible = false;
+            _trayIcon.Dispose();
+            _trayMenu.Dispose();
+            _trayIconImage.Dispose();
+        }
+        catch (Exception exception)
+        {
+            DiagnosticLog.Write($"Tray icon cleanup failed: {exception.GetType().Name}.");
+        }
+
+        try
+        {
+            _hotkeyService.Dispose();
+            _mouseHookService.Dispose();
+            _keyboardHookService.Dispose();
+            _githubChannelClient.Dispose();
+            _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            if (Dispatcher.CheckAccess())
+            {
+                _quickFixWindow.ClosePermanently();
+                _smartSuggestionWindow.ClosePermanently();
+            }
+
+            _viewModel.Save();
+        }
+        catch (Exception exception)
+        {
+            DiagnosticLog.Write($"Application resource cleanup failed: {exception.GetType().Name}.");
+        }
+
+        DiagnosticLog.Write("Application resources and tray icon disposed.");
     }
 
     private void OnStateChanged(object? sender, EventArgs e)
