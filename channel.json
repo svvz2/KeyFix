@@ -19,9 +19,9 @@
     "url": "https://github.com/svvz2/KeyFix/discussions"
   },
   "update": {
-    "latestVersion": "1.4.4",
-    "message": "تحسين دورة التشغيل والإغلاق لمنع تراكم رموز KeyFix في شريط النظام.",
-    "downloadUrl": "https://github.com/svvz2/KeyFix/releases/download/v1.4.4/KeyFix-1.4.4-win-x64.zip",
-    "releaseNotesUrl": "https://github.com/svvz2/KeyFix/releases/tag/v1.4.4"
+    "latestVersion": "1.4.5",
+    "message": "واجهة أبسط بعد إزالة شارة اتصال GitHub مع استمرار روابط الدعم والتحديثات.",
+    "downloadUrl": "https://github.com/svvz2/KeyFix/releases/download/v1.4.5/KeyFix-1.4.5-win-x64.zip",
+    "releaseNotesUrl": "https://github.com/svvz2/KeyFix/releases/tag/v1.4.5"
   }
 }

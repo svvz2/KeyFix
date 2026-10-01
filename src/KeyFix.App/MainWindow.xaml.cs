@@ -139,13 +139,11 @@ public partial class MainWindow : Window
             if (channel is null)
             {
                 ChannelStatusText.Text = "روابط التواصل جاهزة — تعذر قراءة قناة المشروع حالياً";
-                SetChannelConnectionState(connected: false);
                 return;
             }
 
             ApplyGitHubChannel(channel);
             ChannelStatusText.Text = "الحسابات والتحديثات مرتبطة بمستودع KeyFix الرسمي";
-            SetChannelConnectionState(connected: true);
             DiagnosticLog.Write($"GitHub channel loaded. Latest version: {channel.Update.LatestVersion}.");
 
             if (GitHubChannelClient.HasNewerRelease(channel))
@@ -160,21 +158,12 @@ public partial class MainWindow : Window
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
         {
             ChannelStatusText.Text = "روابط التواصل جاهزة — فحص التحديثات يحتاج اتصالاً بالإنترنت";
-            SetChannelConnectionState(connected: false);
             DiagnosticLog.Write($"GitHub channel unavailable: {exception.GetType().Name}.");
             if (showResult)
             {
                 Notify("تعذر فحص التحديثات", "تحقق من اتصال الإنترنت وحاول مرة ثانية", isError: true);
             }
         }
-    }
-
-    private void SetChannelConnectionState(bool connected)
-    {
-        ChannelConnectionText.Text = connected ? "GitHub Connected" : "GitHub Offline";
-        ChannelConnectionBadge.Background = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(connected ? "#E7EEE9" : "#F0EEE8"));
-        ChannelConnectionDot.Fill = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(connected ? "#4C9B68" : "#9A9D97"));
-        ChannelConnectionText.Foreground = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(connected ? "#4C8060" : "#737872"));
     }
 
     private void ApplyGitHubChannel(GitHubChannelConfig channel)
