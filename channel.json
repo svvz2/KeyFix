@@ -19,9 +19,9 @@
     "url": "https://github.com/svvz2/KeyFix/discussions"
   },
   "update": {
-    "latestVersion": "1.4.2",
-    "message": "أصلحنا قراءة النص المحدد عند استخدام Ctrl + Alt + K داخل مختلف البرامج.",
-    "downloadUrl": "https://github.com/svvz2/KeyFix/releases/download/v1.4.2/KeyFix-1.4.2-win-x64.zip",
-    "releaseNotesUrl": "https://github.com/svvz2/KeyFix/releases/tag/v1.4.2"
+    "latestVersion": "1.4.3",
+    "message": "خيار تصحيح اللغة عند الكلك اليمين يظهر الآن فقط عند وجود نص محدد فعلياً.",
+    "downloadUrl": "https://github.com/svvz2/KeyFix/releases/download/v1.4.3/KeyFix-1.4.3-win-x64.zip",
+    "releaseNotesUrl": "https://github.com/svvz2/KeyFix/releases/tag/v1.4.3"
   }
 }

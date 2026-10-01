@@ -406,16 +406,23 @@ public partial class MainWindow : Window
 
     private void OnGlobalRightClick(object? sender, GlobalRightClickEventArgs e)
     {
+        DiagnosticLog.Write($"Right-click observed. Text selection: {e.HasSelectedText}.");
         Dispatcher.BeginInvoke(async () =>
         {
             await Task.Delay(120);
-            if (!_correctionService.CanOfferRightClickAction(_viewModel.Settings, e.TargetWindowHandle))
+            var canOffer = _correctionService.CanOfferRightClickAction(
+                _viewModel.Settings,
+                e.TargetWindowHandle,
+                e.HasSelectedText);
+            DiagnosticLog.Write($"Right-click action available: {canOffer}.");
+            if (!canOffer)
             {
                 _quickFixWindow.HideAction();
                 return;
             }
 
             _quickFixWindow.ShowAt(e.X, e.Y, e.TargetWindowHandle);
+            DiagnosticLog.Write("Right-click action shown.");
         });
     }
 

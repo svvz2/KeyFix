@@ -17,16 +17,16 @@
 ## الرفع إلى GitHub
 
 المشروع يحتوي على Workflow يبني ويختبر التطبيق في Windows عند كل Push أو Pull Request.
-عند إنشاء Tag مثل `v1.4.2` ينشئ Workflow إصدار GitHub ويرفع حزمة المستخدمين وحزمة المصدر وبصمة SHA-256 تلقائياً.
+عند إنشاء Tag مثل `v1.4.3` ينشئ Workflow إصدار GitHub ويرفع حزمة المستخدمين وحزمة المصدر وبصمة SHA-256 تلقائياً.
 
 مثال بعد إنشاء مستودع GitHub وربطه:
 
 ```powershell
 git add .
-git commit -m "Release KeyFix 1.4.2"
+git commit -m "Release KeyFix 1.4.3"
 git push origin main
-git tag v1.4.2
-git push origin v1.4.2
+git tag v1.4.3
+git push origin v1.4.3
 ```
 
 قبل إنشاء الـ Tag حدّث قسم `update` داخل `channel.json` بنفس رقم الإصدار ورابط الحزمة. راجع [دليل قناة GitHub](GITHUB-CHANNEL.md).

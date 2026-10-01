@@ -6,9 +6,13 @@ namespace KeyFix.Windows;
 public sealed class GlobalMouseHookService : IDisposable
 {
     private const int WhMouseLowLevel = 14;
+    private const int WmRightButtonDown = 0x0204;
     private const int WmRightButtonUp = 0x0205;
     private readonly HookProcedure _hookProcedure;
+    private readonly TextSelectionDetector _textSelectionDetector = new();
     private nint _hookHandle;
+    private nint _rightButtonTargetWindow;
+    private bool _rightButtonHadSelectedText;
 
     public GlobalMouseHookService() => _hookProcedure = OnMouseEvent;
 
@@ -41,18 +45,48 @@ public sealed class GlobalMouseHookService : IDisposable
 
     private nint OnMouseEvent(int code, nint message, nint eventData)
     {
-        if (code >= 0 && message == WmRightButtonUp)
+        if (code >= 0 && message == WmRightButtonDown)
         {
             try
             {
                 var data = Marshal.PtrToStructure<LowLevelMouseData>(eventData);
+                _rightButtonTargetWindow = NativeMethods.GetForegroundWindow();
+                _rightButtonHadSelectedText =
+                    _textSelectionDetector.HasSelectedText(
+                        _rightButtonTargetWindow,
+                        data.Point.X,
+                        data.Point.Y);
+            }
+            catch
+            {
+                _rightButtonTargetWindow = nint.Zero;
+                _rightButtonHadSelectedText = false;
+            }
+        }
+        else if (code >= 0 && message == WmRightButtonUp)
+        {
+            try
+            {
+                var data = Marshal.PtrToStructure<LowLevelMouseData>(eventData);
+                var targetWindowHandle = NativeMethods.GetForegroundWindow();
+                var hasSelectedText = targetWindowHandle == _rightButtonTargetWindow &&
+                                      _rightButtonHadSelectedText;
                 RightClickDetected?.Invoke(
                     this,
-                    new GlobalRightClickEventArgs(data.Point.X, data.Point.Y, NativeMethods.GetForegroundWindow()));
+                    new GlobalRightClickEventArgs(
+                        data.Point.X,
+                        data.Point.Y,
+                        targetWindowHandle,
+                        hasSelectedText));
             }
             catch
             {
                 // A global hook must return immediately and must never propagate managed exceptions.
+            }
+            finally
+            {
+                _rightButtonTargetWindow = nint.Zero;
+                _rightButtonHadSelectedText = false;
             }
         }
 
@@ -92,4 +126,8 @@ public sealed class GlobalMouseHookService : IDisposable
     private static extern nint GetModuleHandle(string? moduleName);
 }
 
-public sealed record GlobalRightClickEventArgs(int X, int Y, nint TargetWindowHandle);
+public sealed record GlobalRightClickEventArgs(
+    int X,
+    int Y,
+    nint TargetWindowHandle,
+    bool HasSelectedText);

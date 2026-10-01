@@ -123,9 +123,15 @@ public sealed class TextCorrectionService(
         }
     }
 
-    public bool CanOfferRightClickAction(AppSettings settings, nint targetWindowHandle)
+    public bool CanOfferRightClickAction(
+        AppSettings settings,
+        nint targetWindowHandle,
+        bool hasSelectedText)
     {
-        if (!settings.IsEnabled || !settings.ShowRightClickAction || targetWindowHandle == nint.Zero)
+        if (!settings.IsEnabled ||
+            !settings.ShowRightClickAction ||
+            targetWindowHandle == nint.Zero ||
+            !hasSelectedText)
         {
             return false;
         }
